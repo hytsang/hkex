@@ -20,7 +20,7 @@ setnames(gemstockspagetable, colnames(stockspagetable))
 allstockstable <- rbind(stockspagetable, gemstockspagetable)
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
-    print(corp)
+    print(corpnumber)
     s <- html_session(paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN"))
     print(s); print("start")
     namespage <- html(s)
