@@ -19,7 +19,7 @@ gemstockspagetable <- gemstockspagetable[-1]
 setnames(gemstockspagetable, colnames(stockspagetable))
 allstockstable <- rbind(stockspagetable, gemstockspagetable)
 
-getlinkinfo <- function(linkurl, s = snotice, baseurl = "http://sdinotice.hkex.com.hk/di/") {
+getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(linkurl)
     slink <- jump_to(s, linkurl)
     linkpage <- html(slink)
@@ -53,20 +53,24 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
         snotice <- jump_to(s, url)
         print(snotice); print("notices")
         allnoticestablepage <- html(snotice)
-        allnoticestable1 <- data.table(html_table(html_node(allnoticestablepage, "#grdPaging"), header = TRUE))
-        allnoticestable1 <- allnoticestable1[`Date of relevant event (dd/mm/yyyy)` != " "]
-
-        if(nrow(allnoticestable1)>0) {
-            allnoticestable1links <- html_attr(html_nodes(allnoticestablepage, ".tbCell:nth-child(7) a"), "href")
-            linkinfolist <- lapply(allnoticestable1links, getlinkinfo, s = snotice)
-            linkinfotable <- rbindlist(linkinfolist, fill = TRUE)
-        
-            allnoticestable1 <- cbind(allnoticestable1, linkinfotable)
-        
-            allnoticestable1[,corpnumber := corpnumber]
-
-            if (nrow(allnoticestable1) > 0) {
-                allnoticestable <- rbindlist(list(allnoticestable, allnoticestable1), fill=TRUE)
+        pageslinks <- html_attr(html_nodes(allnoticestablepage, "#lblPageIndex a"), "href")
+        for (pagelink in pageslinks) {
+            spage <- jump_to(snotice, pagelink)
+            allnoticestable1 <- data.table(html_table(html_node(allnoticestablepage, "#grdPaging"), header = TRUE))
+            allnoticestable1 <- allnoticestable1[`Date of relevant event (dd/mm/yyyy)` != " "]
+            
+            if(nrow(allnoticestable1)>0) {
+                allnoticestable1links <- html_attr(html_nodes(allnoticestablepage, ".tbCell:nth-child(7) a"), "href")
+                linkinfolist <- lapply(allnoticestable1links, getlinkinfo, s = spage)
+                linkinfotable <- rbindlist(linkinfolist, fill = TRUE)
+                
+                allnoticestable1 <- cbind(allnoticestable1, linkinfotable)
+                
+                allnoticestable1[,corpnumber := corpnumber]
+                
+                if (nrow(allnoticestable1) > 0) {
+                    allnoticestable <- rbindlist(list(allnoticestable, allnoticestable1), fill=TRUE)
+                }
             }
         }
     }
@@ -74,5 +78,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
 }
 
 allnoticeslist <- lapply(allstockstable[,`STOCK CODE`][10:11], gettable)
+save(allnoticeslist, file = "allnoticeslist.Rdata")
+
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 
