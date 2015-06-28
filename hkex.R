@@ -20,18 +20,19 @@ setnames(gemstockspagetable, colnames(stockspagetable))
 allstockstable <- rbind(stockspagetable, gemstockspagetable)
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
+    print(corp)
     s <- html_session(paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN"))
     print(s); print("start")
     namespage <- html(s)
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, "a:nth-child(11)"), "href")
     allnoticestable <- data.table()
     for (url in namespageallnoticeslinks) {
-        print(url)
         snotice <- jump_to(s, url)
         print(snotice); print("notices")
         allnoticestablepage <- html(snotice)
         allnoticestable1 <- data.table(html_table(html_node(allnoticestablepage, "#grdPaging"), header = TRUE))
         allnoticestable1 <- allnoticestable1[`Reason for disclosure` != " "]
+
         allnoticestable1links <- html_attr(html_nodes(allnoticestablepage, ".tbCell:nth-child(7) a"), "href")
         getlinkinfo <- function(linkurl, baseurl = "http://sdinotice.hkex.com.hk/di/") {
             print(linkurl)
@@ -52,19 +53,19 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
             for (position in 1:length(positions)) {
                 linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
             }
-
-            print(linkinfotable)
             return(linkinfotable)
         }
 
         linkinfolist <- lapply(allnoticestable1links, getlinkinfo)
-        print(linkinfolist)
         linkinfotable <- rbindlist(linkinfolist, fill = TRUE)
         
         allnoticestable1 <- cbind(allnoticestable1, linkinfotable)
         
-        allnoticestable1[,corpnumber := corpnumber] 
-        allnoticestable <- rbindlist(list(allnoticestable, allnoticestable1), fill=TRUE)
+        allnoticestable1[,corpnumber := corpnumber]
+
+        if (nrow(allnoticestable1) > 0) {
+            allnoticestable <- rbindlist(list(allnoticestable, allnoticestable1), fill=TRUE)
+        }
     }
     return(allnoticestable)
 }
