@@ -1,6 +1,7 @@
 library(rvest)
 library(data.table)
 library(stringr)
+library(httr)
 
 codespage <- html("http://sdinotice.hkex.com.hk/di/NSStdCode.htm")
 codestable <- data.table(codes = html_text(html_nodes(codespage, ".txt:nth-child(1)")), descriptions = str_trim(str_replace_all(html_text(html_nodes(codespage, ".txt:nth-child(2)")), "[\r\n\t]", "")))
@@ -44,15 +45,16 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
-    s <- html_session(paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN"))
+    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN")
+    s <- html_session(firsturl)
     print(s); print("start")
-    namespage <- html(s)
+    namespage <- html(firsturl)
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, "a:nth-child(11)"), "href")
     allnoticestable <- data.table()
     for (url in namespageallnoticeslinks) {
         snotice <- jump_to(s, url)
         print(snotice); print("notices")
-        allnoticestablepage <- html(snotice)
+        allnoticestablepage <- html(paste0(baseurl, url), encoding = "UTF-8")
         pageslinks <- html_attr(html_nodes(allnoticestablepage, "#lblPageIndex a"), "href")
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
