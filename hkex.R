@@ -24,22 +24,26 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     print(linkurl)
     slink <- jump_to(s, linkurl)
     linkpage <- html(slink)
-    
-    tso <- html_text(html_node(linkpage, "#lblDIssued"))
-    
-    before <- html_text(html_nodes(linkpage, "#grdSh_BEvt td.txt"))
-    after <- html_text(html_nodes(linkpage, "#grdSh_AEvt td.txt"))
-    
-    positions <- before[seq(1,length(before),3)]
-    pctbefore <- as.numeric(before[seq(3,length(before),3)])
-    pctafter <- as.numeric(after[seq(3,length(before),3)])
-    pctdiff <- pctafter - pctbefore
-    
-    linkinfotable <- data.table(tso = tso)
-    for (position in 1:length(positions)) {
-        linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
+
+    if (!is.null(html_node(linkpage, "#lblDIssued"))) {
+        tso <- html_text(html_node(linkpage, "#lblDIssued"))
+        
+        before <- html_text(html_nodes(linkpage, "#grdSh_BEvt td.txt"))
+        after <- html_text(html_nodes(linkpage, "#grdSh_AEvt td.txt"))
+        
+        positions <- before[seq(1,length(before),3)]
+        pctbefore <- as.numeric(before[seq(3,length(before),3)])
+        pctafter <- as.numeric(after[seq(3,length(before),3)])
+        pctdiff <- pctafter - pctbefore
+        
+        linkinfotable <- data.table(tso = tso)
+        for (position in 1:length(positions)) {
+            linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
+        }
+        return(linkinfotable)
+    } else {
+        return(data.table(`Long Position` = NA))
     }
-    return(linkinfotable)
 }
 
 
@@ -84,3 +88,9 @@ save(allnoticeslist, file = "allnoticeslist.Rdata")
 
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 
+searchsession <- html_session("http://www.hkexnews.hk/reports/dirsearch/director_list.asp")
+searchform <- html_form(html_node(html(searchsession), "form"))
+
+getdirectorinfo <- function(corpnumber) {
+    searchformdone <- set_values(searchform, search_by = 'Stock_Code', txt_stock_code = corpnumber)
+}
