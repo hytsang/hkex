@@ -49,6 +49,7 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
+    if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {print("skip!"); return(c())}
     firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
@@ -80,17 +81,30 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
             }
         }
     }
-    return(allnoticestable)
+    save(allnoticestable, file = paste0("notices/", corpnumber, ".Rdata"))
+#    return(allnoticestable)
 }
 
-allnoticeslist <- lapply(allstockstable[,`STOCK CODE`][10:11], gettable)
-save(allnoticeslist, file = "allnoticeslist.Rdata")
+allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
+#save(allnoticeslist, file = "allnoticeslist.Rdata")
 
-allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
+#allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 
-searchsession <- html_session("http://www.hkexnews.hk/reports/dirsearch/director_list.asp")
-searchform <- html_form(html_node(html(searchsession), "form"))
-
+# officers
 getdirectorinfo <- function(corpnumber) {
-    searchformdone <- set_values(searchform, search_by = 'Stock_Code', txt_stock_code = corpnumber)
+    print(corpnumber)
+    if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); return(c())}
+    corpnumber <- str_sub(corpnumber, -4, -1)
+    officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", corpnumber, ".HK&WTmodLOC=C4-Officers-5"))
+    if (!is.null(html_node(officerpage, "table.dataTable"))) {
+        officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
+        officertable[,corpnumber := corpnumber]
+        save(officertable, file = paste0("officers/", corpnumber, "officers.Rdata"))
+        return(officertable)
+    } else {
+        return(data.table(corpnumber = corpnumber))
+    }
 }
+
+allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`], getdirectorinfo), fill=TRUE)
+save(allofficers, file = "allofficers.Rdata")
