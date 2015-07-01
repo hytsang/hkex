@@ -112,8 +112,7 @@ save(allallnoticestable, file = "allnoticestable.Rdata")
 getdirectorinfo <- function(corpnumber) {
     print(paste("officer", corpnumber))
     if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); return(c())}
-    corpnumber <- str_sub(corpnumber, -4, -1)
-    officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", corpnumber, ".HK&WTmodLOC=C4-Officers-5"))
+    officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", str_sub(corpnumber, -4, -1), ".HK&WTmodLOC=C4-Officers-5"))
     if (!is.null(html_node(officerpage, "table.dataTable"))) {
         officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
         officertable[,corpnumber := corpnumber]
