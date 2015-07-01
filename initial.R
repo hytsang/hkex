@@ -56,7 +56,11 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
-    if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {print("skip!"); return(c())}
+    if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {
+        print("skip!")
+        load(paste0("notices/", corpnumber, ".Rdata"))
+        return(allnoticestable)
+    }
     firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
@@ -82,6 +86,8 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
                 allnoticestablepage <- cbind(allnoticestablepage, linkinfotable)
                 
                 allnoticestablepage[,corpnumber := corpnumber]
+
+
                 
                 if (nrow(allnoticestablepage) > 0) {
                     allnoticestable <- rbindlist(list(allnoticestable, allnoticestablepage), fill=TRUE)
@@ -90,23 +96,21 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
         }
     }
     save(allnoticestable, file = paste0("notices/", corpnumber, ".Rdata"))
-#    return(allnoticestable)
+    return(allnoticestable)
 }
 
-                                        #allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
-
-for (stock in allstockstable[,`STOCK CODE`]) {
-    gettable(stock)
-    gc()
-}
-
-                                        #save(allnoticeslist, file = "allnoticeslist.Rdata")
-
-#allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
+allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
+save(allnoticeslist, file = "allnoticeslist.Rdata")
+allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
+allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
+allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
+allallnoticestable[,amount := numberofshares * pricepershare]
+allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
+save(allallnoticestable, file = "allnoticestable.Rdata")
 
 # officers
 getdirectorinfo <- function(corpnumber) {
-    print(corpnumber)
+    print(paste("officer", corpnumber))
     if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); return(c())}
     corpnumber <- str_sub(corpnumber, -4, -1)
     officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", corpnumber, ".HK&WTmodLOC=C4-Officers-5"))
