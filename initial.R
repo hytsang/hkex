@@ -30,17 +30,24 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
         
         before <- html_text(html_nodes(linkpage, "#grdSh_BEvt td.txt"))
         after <- html_text(html_nodes(linkpage, "#grdSh_AEvt td.txt"))
-        
-        positions <- before[seq(1,length(before),3)]
-        pctbefore <- as.numeric(before[seq(3,length(before),3)])
-        pctafter <- as.numeric(after[seq(3,length(before),3)])
-        pctdiff <- pctafter - pctbefore
-        
-        linkinfotable <- data.table(tso = tso)
-        for (position in 1:length(positions)) {
-            linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
+
+        if(length(before) > 0) {
+            
+            positions <- before[seq(1,length(before),3)]
+            pctbefore <- as.numeric(before[seq(3,length(before),3)])
+            pctafter <- as.numeric(after[seq(3,length(before),3)])
+            pctdiff <- pctafter - pctbefore
+            
+            linkinfotable <- data.table(tso = tso)
+            for (position in 1:length(positions)) {
+                linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
+            }
+            return(linkinfotable)
+
+        } else {
+            linkinfotable <- data.table(tso = tso)
+            return(linkinfotable)
         }
-        return(linkinfotable)
     } else {
         return(data.table(`Long Position` = NA))
     }
@@ -59,26 +66,25 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     for (url in namespageallnoticeslinks) {
         snotice <- jump_to(s, url)
         print(snotice); print("notices")
-        allnoticestablepage <- html(paste0(baseurl, url), encoding = "UTF-8")
-        pageslinks <- html_attr(html_nodes(allnoticestablepage, "#lblPageIndex a"), "href")
-        print(pageslinks)
+        noticestablehtml <- html(paste0(baseurl, url), encoding = "UTF-8")
+        pageslinks <- html_attr(html_nodes(noticestablehtml, "#lblPageIndex a"), "href")
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
             print(pagelink); print("page")
-            allnoticestable1 <- data.table(html_table(html_node(spage, "#grdPaging"), header = TRUE))
-            allnoticestable1 <- allnoticestable1[`Date of relevant event (dd/mm/yyyy)` != " "]
+            allnoticestablepage <- data.table(html_table(html_node(spage, "#grdPaging"), header = TRUE))
+            allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
             
-            if(nrow(allnoticestable1)>0) {
-                allnoticestable1links <- html_attr(html_nodes(allnoticestablepage, ".tbCell:nth-child(7) a"), "href")
-                linkinfolist <- lapply(allnoticestable1links, getlinkinfo, s = spage)
+            if(nrow(allnoticestablepage)>0) {
+                allnoticestablepagelinks <- html_attr(html_nodes(spage, ".tbCell:nth-child(7) a"), "href")
+                linkinfolist <- lapply(allnoticestablepagelinks, getlinkinfo, s = spage)
                 linkinfotable <- rbindlist(linkinfolist, fill = TRUE)
                 
-                allnoticestable1 <- cbind(allnoticestable1, linkinfotable)
+                allnoticestablepage <- cbind(allnoticestablepage, linkinfotable)
                 
-                allnoticestable1[,corpnumber := corpnumber]
+                allnoticestablepage[,corpnumber := corpnumber]
                 
-                if (nrow(allnoticestable1) > 0) {
-                    allnoticestable <- rbindlist(list(allnoticestable, allnoticestable1), fill=TRUE)
+                if (nrow(allnoticestablepage) > 0) {
+                    allnoticestable <- rbindlist(list(allnoticestable, allnoticestablepage), fill=TRUE)
                 }
             }
         }
