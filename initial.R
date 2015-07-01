@@ -85,8 +85,14 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
 #    return(allnoticestable)
 }
 
-allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
-#save(allnoticeslist, file = "allnoticeslist.Rdata")
+                                        #allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
+
+for (stock in allstockstable[,`STOCK CODE`]) {
+    gettable(stock)
+    gc()
+}
+
+                                        #save(allnoticeslist, file = "allnoticeslist.Rdata")
 
 #allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 
