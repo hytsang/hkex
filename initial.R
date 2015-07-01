@@ -61,9 +61,11 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
         print(snotice); print("notices")
         allnoticestablepage <- html(paste0(baseurl, url), encoding = "UTF-8")
         pageslinks <- html_attr(html_nodes(allnoticestablepage, "#lblPageIndex a"), "href")
+        print(pageslinks)
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
-            allnoticestable1 <- data.table(html_table(html_node(allnoticestablepage, "#grdPaging"), header = TRUE))
+            print(pagelink); print("page")
+            allnoticestable1 <- data.table(html_table(html_node(spage, "#grdPaging"), header = TRUE))
             allnoticestable1 <- allnoticestable1[`Date of relevant event (dd/mm/yyyy)` != " "]
             
             if(nrow(allnoticestable1)>0) {
