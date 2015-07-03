@@ -2,6 +2,7 @@ library(rvest)
 library(data.table)
 library(stringr)
 library(httr)
+library(lubridate)
 
 codespage <- html("http://sdinotice.hkex.com.hk/di/NSStdCode.htm")
 codestable <- data.table(codes = html_text(html_nodes(codespage, ".txt:nth-child(1)")), descriptions = str_trim(str_replace_all(html_text(html_nodes(codespage, ".txt:nth-child(2)")), "[\r\n\t]", "")))
@@ -53,15 +54,21 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
+todaysdate <- ymd(today())
+threemonthsago <- ymd(today() - months(3))
+onemonthago <- ymd(today() - months(1))
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
     if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {
         print("skip!")
         load(paste0("notices/", corpnumber, ".Rdata"))
+        print(allnoticestable)
         return(allnoticestable)
     }
-    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=28/06/2014&sced=28/06/2015&sc=", corpnumber, "&src=MAIN&lang=EN")
+    todaysdateprinted <- strftime(todaysdate, "%d/%m/%Y")
+    firstdateprinted <- strftime(threemonthsago, "%d/%m/%Y")
+    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", todaysdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
@@ -99,7 +106,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     return(allnoticestable)
 }
 
-allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
+allnoticeslist <- lapply(allstockstable[,`STOCK CODE`][8:12], gettable)
 save(allnoticeslist, file = "allnoticeslist.Rdata")
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
@@ -111,7 +118,7 @@ save(allallnoticestable, file = "allnoticestable.Rdata")
 # officers
 getdirectorinfo <- function(corpnumber) {
     print(paste("officer", corpnumber))
-    if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); return(c())}
+    if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); load(paste0("officers/", corpnumber, "officers.Rdata")); return(officertable)}
     officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", str_sub(corpnumber, -4, -1), ".HK&WTmodLOC=C4-Officers-5"))
     if (!is.null(html_node(officerpage, "table.dataTable"))) {
         officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
@@ -123,5 +130,16 @@ getdirectorinfo <- function(corpnumber) {
     }
 }
 
-allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`], getdirectorinfo), fill=TRUE)
+allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`][8:12], getdirectorinfo), fill=TRUE)
 save(allofficers, file = "allofficers.Rdata")
+
+allofficers[,c("firstname", "lastname") := tstrsplit(Name, " ", fixed=TRUE)]
+allofficers[,name := paste(lastname, firstname)]
+
+setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+setkey(allallnoticestable, `corpnumber`, `name`)
+setkey(allofficers, `corpnumber`, `name`)
+allallnoticestable <- merge(allallnoticestable, allofficers, all.x=TRUE)
+
+onemonthtable <- allallnoticestable[(dmy(`Date of relevant event (dd/mm/yyyy)`) - onemonthago > 0) & ((amount > 10^7) | (abs(`Long Position`) > 0.01))]
+threemonthtable <- allallnoticestable[(dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago) & ((amount > 5*(10^7)) | (abs(`Long Position`) > 0.05))]
