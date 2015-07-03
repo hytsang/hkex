@@ -106,7 +106,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     return(allnoticestable)
 }
 
-allnoticeslist <- lapply(allstockstable[,`STOCK CODE`][8:12], gettable)
+allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
 save(allnoticeslist, file = "allnoticeslist.Rdata")
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
@@ -130,7 +130,7 @@ getdirectorinfo <- function(corpnumber) {
     }
 }
 
-allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`][8:12], getdirectorinfo), fill=TRUE)
+allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`], getdirectorinfo), fill=TRUE)
 save(allofficers, file = "allofficers.Rdata")
 
 allofficers[,c("firstname", "lastname") := tstrsplit(Name, " ", fixed=TRUE)]
