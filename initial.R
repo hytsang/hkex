@@ -54,9 +54,9 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-todaysdate <- ymd("2015-07-03")
-threemonthsago <- ymd(todaysdate - months(3))
-onemonthago <- ymd(todaysdate - months(1))
+firstdate <- ymd("2015-07-03")
+threemonthsago <- ymd(firstdate - months(3))
+onemonthago <- ymd(firstdate - months(1))
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
@@ -65,9 +65,9 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
         load(paste0("notices/", corpnumber, ".Rdata"))
         return(allnoticestable)
     }
-    todaysdateprinted <- strftime(todaysdate, "%d/%m/%Y")
+    firstdateprinted <- strftime(firstdate, "%d/%m/%Y")
     firstdateprinted <- strftime(threemonthsago, "%d/%m/%Y")
-    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", todaysdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
+    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", firstdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
@@ -148,7 +148,7 @@ threemonthchangethreshold <- 0.03
 onemonthtable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > onemonthago]
 threemonthable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago]
 onemonthtable <- onemonthtable[(amount > onemonthamountthreshold) | (abs(`Long Position`) > onemonthchangethreshold) | (abs(`Short Position`) > onemonthchangethreshold) | (abs(`Lending Pool`) > onemonthchangethreshold)]
-threemonthstable <- threemonthstable[(amount > threemonthamountthreshold) | (abs(`Long Position`) > threemonthchangethreshold) | (abs(`Short Position`) > threemonthchangethreshold) | (abs(`Lending Pool`) > threemonthchangethreshold)]
+threemonthtable <- threemonthtable[(amount > threemonthamountthreshold) | (abs(`Long Position`) > threemonthchangethreshold) | (abs(`Short Position`) > threemonthchangethreshold) | (abs(`Lending Pool`) > threemonthchangethreshold)]
 
 presenttable <- function(table) {
     tablepresent <- table[,list(corpnumber, name, `Reason for disclosure`, `No. of shares bought / sold / involved`, `Average price per share`, `% of issued share capital`, `Date of relevant event (dd/mm/yyyy)`, tso, `Long Position`, `Short Position`, `Lending Pool`, amount, currency, Age, `Current Position`, Since)]
