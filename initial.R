@@ -66,8 +66,8 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
         return(allnoticestable)
     }
     firstdateprinted <- strftime(firstdate, "%d/%m/%Y")
-    firstdateprinted <- strftime(threemonthsago, "%d/%m/%Y")
-    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", firstdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
+    threemonthsagoprinted <- strftime(threemonthsago, "%d/%m/%Y")
+    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", threemonthsagoprinted, "&sced=", firstdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
@@ -161,3 +161,5 @@ presenttable <- function(table) {
 onemonthtablepresent <- presenttable(onemonthtable)
 threemonthtablepresent <- presenttable(threemonthtable)
 
+write.csv(onemonthtablepresent, "onemonthtablepresent.csv")
+write.csv(threemonthtablepresent, "threemonthtablepresent.csv")
