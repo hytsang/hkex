@@ -140,5 +140,24 @@ setkey(allallnoticestable, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
 allallnoticestable <- merge(allallnoticestable, allofficers, all.x=TRUE)
 
-onemonthtable <- allallnoticestable[(dmy(`Date of relevant event (dd/mm/yyyy)`) - onemonthago > 0) & ((amount > 10^7) | (abs(`Long Position`) > 0.01))]
-threemonthtable <- allallnoticestable[(dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago) & ((amount > 5*(10^7)) | (abs(`Long Position`) > 0.05))]
+onemonthamountthreshold <- 10^7
+threemonthamountthreshold <- 5*10^7
+onemonthchangethreshold <- 0.01
+threemonthchangethreshold <- 0.03
+
+onemonthtable <- allnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > onemonthago]
+threemonthable <- allnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago]
+onemonthtable <- onemonthtable[(amount > onemonthamountthreshold) | (abs(`Long Position`) > onemonthchangethreshold) | (abs(`Short Position`) > onemonthchangethreshold) | (abs(`Lending Pool`) > onemonthchangethreshold)]
+threemonthstable <- threemonthstable[(amount > threemonthamountthreshold) | (abs(`Long Position`) > threemonthchangethreshold) | (abs(`Short Position`) > threemonthchangethreshold) | (abs(`Lending Pool`) > threemonthchangethreshold)]
+
+presenttable <- function(table) {
+    tablepresent <- table[,list(corpnumber, name, `Reason for disclosure`, `No. of shares bought / sold / involved`, `Average price per share`, `% of issued share capital`, `Date of relevant event (dd/mm/yyyy)`, tso, `Long Position`, `Short Position`, `Lending Pool`, amount, currency, Age, `Current Position`, Since)]
+    setnames(tablepresent, c("Stock code", "Name", "Disclosure code", "No. of shares", "Average price", "% interest", "Date", "TSO", "Change in long position", "Change in short position", "Change in lending pool", "Amount", "Currency", "Age", "Current Position", "Since"))
+    tablepresent[,Date := dmy(Date)]
+    tablepresent <- tablepresent[order(-rank(Date), rank(`Stock code`))]
+    return(tablepresent)
+}
+
+onemonthtablepresent <- presenttable(onemonthtable)
+threemonthtablepresent <- presenttable(threemonthtable)
+
