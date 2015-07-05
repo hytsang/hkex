@@ -54,9 +54,9 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-todaysdate <- ymd(today())
-threemonthsago <- ymd(today() - months(3))
-onemonthago <- ymd(today() - months(1))
+todaysdate <- ymd("2015-07-03")
+threemonthsago <- ymd(todaysdate - months(3))
+onemonthago <- ymd(todaysdate - months(1))
 
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(corpnumber)
