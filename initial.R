@@ -145,8 +145,8 @@ threemonthamountthreshold <- 5*10^7
 onemonthchangethreshold <- 0.01
 threemonthchangethreshold <- 0.03
 
-onemonthtable <- allnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > onemonthago]
-threemonthable <- allnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago]
+onemonthtable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > onemonthago]
+threemonthable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago]
 onemonthtable <- onemonthtable[(amount > onemonthamountthreshold) | (abs(`Long Position`) > onemonthchangethreshold) | (abs(`Short Position`) > onemonthchangethreshold) | (abs(`Lending Pool`) > onemonthchangethreshold)]
 threemonthstable <- threemonthstable[(amount > threemonthamountthreshold) | (abs(`Long Position`) > threemonthchangethreshold) | (abs(`Short Position`) > threemonthchangethreshold) | (abs(`Lending Pool`) > threemonthchangethreshold)]
 
