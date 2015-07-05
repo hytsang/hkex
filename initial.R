@@ -63,7 +63,6 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {
         print("skip!")
         load(paste0("notices/", corpnumber, ".Rdata"))
-        print(allnoticestable)
         return(allnoticestable)
     }
     todaysdateprinted <- strftime(todaysdate, "%d/%m/%Y")
