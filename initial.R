@@ -127,8 +127,8 @@ threemonthtable <- allallnoticestable[currency == "HKD" & dmy(`Date of relevant 
 nettable <- function(table) {
     return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
 }
-onemonthtablenet <- nettable(onemonthtable)
-threemonthtablenet <- nettable(threemonthtable)
+onemonthtablenet <- nettable(onemonthtable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
+threemonthtablenet <- nettable(threemonthtable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
 
 # officers
 allofficers <- data.table(read_excel("Director_List.xls"))
