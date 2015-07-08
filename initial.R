@@ -44,7 +44,6 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
                 linkinfotable[,positions[position] := pctdiff[position], with=FALSE]
             }
             return(linkinfotable)
-
         } else {
             linkinfotable <- data.table(tso = tso)
             return(linkinfotable)
@@ -54,24 +53,19 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-firstdate <- ymd("2015-07-03")
+firstdate <- ymd(today())
 threemonthsago <- ymd(firstdate - months(3))
 onemonthago <- ymd(firstdate - months(1))
 
-gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
+gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11) {
     print(corpnumber)
-    if (file.exists(paste0("notices/", corpnumber, ".Rdata"))) {
-        print("skip!")
-        load(paste0("notices/", corpnumber, ".Rdata"))
-        return(allnoticestable)
-    }
     firstdateprinted <- strftime(firstdate, "%d/%m/%Y")
     threemonthsagoprinted <- strftime(threemonthsago, "%d/%m/%Y")
     firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", threemonthsagoprinted, "&sced=", firstdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
-    namespageallnoticeslinks <- html_attr(html_nodes(namespage, "a:nth-child(11)"), "href")
+    namespageallnoticeslinks <- html_attr(html_nodes(namespage, paste0("a:nth-child(", searchnumber, ")")), "href")
     allnoticestable <- data.table()
     for (url in namespageallnoticeslinks) {
         snotice <- jump_to(s, url)
@@ -105,19 +99,18 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     return(allnoticestable)
 }
 
-allnoticeslist <- lapply(allstockstable[,`STOCK CODE`], gettable)
-save(allnoticeslist, file = "allnoticeslist.Rdata")
+stockcodes <- 1:3 # stockcodes <- allstockstable[,`STOCK CODE`]
+allnoticeslist <- lapply(stockcodes, gettable, searchnumber = 11)
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
 allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 allallnoticestable[,amount := numberofshares * pricepershare]
 allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-save(allallnoticestable, file = "allnoticestable.Rdata")
+save(allallnoticestable, file = "allallnoticestable.Rdata")
 
 # officers
 getdirectorinfo <- function(corpnumber) {
     print(paste("officer", corpnumber))
-    if (file.exists(paste0("officers/", corpnumber, "officers.Rdata"))) {print("skip!"); load(paste0("officers/", corpnumber, "officers.Rdata")); return(officertable)}
     officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", str_sub(corpnumber, -4, -1), ".HK&WTmodLOC=C4-Officers-5"))
     if (!is.null(html_node(officerpage, "table.dataTable"))) {
         officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
@@ -129,37 +122,27 @@ getdirectorinfo <- function(corpnumber) {
     }
 }
 
-allofficers <- rbindlist(lapply(allstockstable[,`STOCK CODE`], getdirectorinfo), fill=TRUE)
+allofficers <- rbindlist(lapply(stockcodes, getdirectorinfo), fill=TRUE)
 save(allofficers, file = "allofficers.Rdata")
 
 allofficers[,c("firstname", "lastname") := tstrsplit(Name, " ", fixed=TRUE)]
 allofficers[,name := paste(lastname, firstname)]
-
 setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+
 setkey(allallnoticestable, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
 allallnoticestable <- merge(allallnoticestable, allofficers, all.x=TRUE)
 
 onemonthamountthreshold <- 10^7
 threemonthamountthreshold <- 5*10^7
-onemonthchangethreshold <- 0.01
-threemonthchangethreshold <- 0.03
+onemonthchangethreshold <- 0.1
+threemonthchangethreshold <- 0.3
 
-onemonthtable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > onemonthago]
-threemonthtable <- allallnoticestable[dmy(`Date of relevant event (dd/mm/yyyy)`) > threemonthsago]
-onemonthtable <- onemonthtable[(amount > onemonthamountthreshold) | (abs(`Long Position`) > onemonthchangethreshold) | (abs(`Short Position`) > onemonthchangethreshold) | (abs(`Lending Pool`) > onemonthchangethreshold)]
-threemonthtable <- threemonthtable[(amount > threemonthamountthreshold) | (abs(`Long Position`) > threemonthchangethreshold) | (abs(`Short Position`) > threemonthchangethreshold) | (abs(`Lending Pool`) > threemonthchangethreshold)]
+onemonthtable <- allallnoticestable[Currency = "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthtable <- allallnoticestable[Currency = "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
 
-presenttable <- function(table) {
-    tablepresent <- table[,list(corpnumber, name, `Reason for disclosure`, `No. of shares bought / sold / involved`, `Average price per share`, `% of issued share capital`, `Date of relevant event (dd/mm/yyyy)`, tso, `Long Position`, `Short Position`, `Lending Pool`, amount, currency, Age, `Current Position`, Since)]
-    setnames(tablepresent, c("Stock code", "Name", "Disclosure code", "No. of shares", "Average price", "% interest", "Date", "TSO", "Change in long position", "Change in short position", "Change in lending pool", "Amount", "Currency", "Age", "Current Position", "Since"))
-    tablepresent[,Date := dmy(Date)]
-    tablepresent <- tablepresent[order(-rank(Date), rank(`Stock code`))]
-    return(tablepresent)
-}
+onemonthtable <- onemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
+threemonthtable <- threemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
 
-onemonthtablepresent <- presenttable(onemonthtable)
-threemonthtablepresent <- presenttable(threemonthtable)
-
-write.csv(onemonthtablepresent, "onemonthtablepresent.csv")
-write.csv(threemonthtablepresent, "threemonthtablepresent.csv")
+write.csv(onemonthtablepresent, "onemonthtablenet.csv")
+write.csv(threemonthtablepresent, "threemonthtablenet.csv")
