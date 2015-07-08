@@ -104,7 +104,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     return(allnoticestable)
 }
 
-stockcodes <- 1:3 # stockcodes <- allstockstable[,`STOCK CODE`]
+stockcodes <- allstockstable[,`STOCK CODE`][1:3]
 allnoticeslist <- lapply(stockcodes, gettable, searchnumber = 11)
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
 allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
