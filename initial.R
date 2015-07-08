@@ -144,7 +144,19 @@ threemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of re
 
 
 nettable <- function(table) {
-    return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
+    if "Short Position" %in% colnames(table) {
+        if "Lending Pool" %in% colnames(table) {
+            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
+        } else {
+            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
+        }
+    } else {
+        if "Lending Pool" %in% colnames(table) {
+            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
+        } else {
+            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
+        }
+    }
 }
 onemonthdirtablenet <- nettable(onemonthdirtable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
 threemonthdirtablenet <- nettable(threemonthdirtable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
