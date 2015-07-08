@@ -3,6 +3,7 @@ library(data.table)
 library(stringr)
 library(httr)
 library(lubridate)
+library(readxl)
 
 codespage <- html("http://sdinotice.hkex.com.hk/di/NSStdCode.htm")
 codestable <- data.table(codes = html_text(html_nodes(codespage, ".txt:nth-child(1)")), descriptions = str_trim(str_replace_all(html_text(html_nodes(codespage, ".txt:nth-child(2)")), "[\r\n\t]", "")))
@@ -125,12 +126,18 @@ getdirectorinfo <- function(corpnumber) {
     }
 }
 
-allofficers <- rbindlist(lapply(stockcodes, getdirectorinfo), fill=TRUE)
-save(allofficers, file = "allofficers.Rdata")
+allofficers <- data.table(read_excel("Director_List.xls"))
 
-allofficers[,c("firstname", "lastname") := tstrsplit(Name, " ", fixed=TRUE)]
-allofficers[,name := paste(lastname, firstname)]
+capwords <- function(s, strict = FALSE) {
+    cap <- function(s) paste(toupper(substring(s, 1, 1)),
+                  {s <- substring(s, 2); if(strict) tolower(s) else s},
+                             sep = "", collapse = " " )
+    sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
+}
+
+allofficers[,name := capwords(`Director's English Name`, strict = TRUE)]
 setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+setnames(allofficers, "Stock Code", "corpnumber")
 
 setkey(allallnoticestable, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
