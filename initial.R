@@ -81,9 +81,9 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
             print(spage); print("page")
             allnoticestablepage <- data.table(html_table(html_node(html(spage), "#grdPaging"), header = TRUE))
             if (searchnumber == 5) {
-                allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
-            } else {
                 allnoticestablepage <- allnoticestablepage[`Date of relevant event` != " "]
+            } else {
+                allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
             }
             
             if(nrow(allnoticestablepage)>0) {
