@@ -104,7 +104,6 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
             }
         }
     }
-    save(allnoticestable, file = paste0("notices/", corpnumber, ".Rdata"))
     return(allnoticestable)
 }
 
