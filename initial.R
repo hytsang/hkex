@@ -113,19 +113,21 @@ allallnoticestable[,amount := numberofshares * pricepershare]
 allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
 save(allallnoticestable, file = "allallnoticestable.Rdata")
 
-# officers
-getdirectorinfo <- function(corpnumber) {
-    print(paste("officer", corpnumber))
-    officerpage <- html(paste0("http://www.reuters.com/finance/stocks/companyOfficers?symbol=", str_sub(corpnumber, -4, -1), ".HK&WTmodLOC=C4-Officers-5"))
-    if (!is.null(html_node(officerpage, "table.dataTable"))) {
-        officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
-        officertable[,corpnumber := corpnumber]
-        return(officertable)
-    } else {
-        return(data.table(corpnumber = corpnumber))
-    }
-}
+onemonthamountthreshold <- 10^7
+threemonthamountthreshold <- 5*10^7
+onemonthchangethreshold <- 0.1
+threemonthchangethreshold <- 0.3
 
+onemonthtable <- allallnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthtable <- allallnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+
+nettable <- function(table) {
+    return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
+}
+onemonthtablenet <- nettable(onemonthtable)
+threemonthtablenet <- nettable(threemonthtable)
+
+# officers
 allofficers <- data.table(read_excel("Director_List.xls"))
 
 capwords <- function(s, strict = FALSE) {
@@ -135,24 +137,14 @@ capwords <- function(s, strict = FALSE) {
     sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
 }
 
-allofficers[,name := capwords(`Director's English Name`, strict = TRUE)]
-setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+allofficers[,name := str_replace_all(capwords(`Director's English Name`, strict = TRUE), ",", "")]
 setnames(allofficers, "Stock Code", "corpnumber")
 
-setkey(allallnoticestable, `corpnumber`, `name`)
+setkey(onemonthtablenet, `corpnumber`, `name`)
+setkey(threemonthtablenet, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
-allallnoticestablewithofficers <- merge(allallnoticestable, allofficers, all.x=TRUE)
+onemonthtablenetwithofficers <- merge(onemonthtablenet, allofficers, all.x=TRUE)
+threemonthtablenetwithofficers <- merge(threemonthtablenet, allofficers, all.x=TRUE)
 
-onemonthamountthreshold <- 10^7
-threemonthamountthreshold <- 5*10^7
-onemonthchangethreshold <- 0.1
-threemonthchangethreshold <- 0.3
-
-onemonthtable <- allallnoticestablewithofficers[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthtable <- allallnoticestablewithofficers[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
-
-onemonthtablenet <- onemonthtable[,list(long = sum(`Long position`, na.rm=TRUE), short = sum(`Short position`, na.rm=TRUE), pool = sum(`Lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
-threemonthtablenet <- threemonthtable[,list(long = sum(`Long position`, na.rm=TRUE), short = sum(`Short position`, na.rm=TRUE), pool = sum(`Lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
-
-write.csv(onemonthtablenet, "onemonthtablenet.csv")
-write.csv(threemonthtablenet, "threemonthtablenet.csv")
+write.csv(onemonthtablenetwithofficers, file = "onemonthtablenet.csv")
+write.csv(threemonthtablenetwithofficers, file = "threemonthtablenet.csv")
