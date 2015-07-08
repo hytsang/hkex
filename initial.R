@@ -105,30 +105,47 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
 }
 
 stockcodes <- allstockstable[,`STOCK CODE`][1:10]
-allnoticeslist <- lapply(stockcodes, gettable, searchnumber = 11)
-allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
-allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
-allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
-allallnoticestable[,amount := numberofshares * pricepershare]
-allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
-allallnoticestable[,name := str_replace_all(name, fixed(","), "")]
-allallnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
-save(allallnoticestable, file = "allallnoticestable.Rdata")
+
+
+dirnoticeslist <- lapply(stockcodes, gettable, searchnumber = 9)
+alldirnoticestable <- rbindlist(dirnoticeslist, fill=TRUE)
+alldirnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
+alldirnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
+alldirnoticestable[,amount := numberofshares * pricepershare]
+alldirnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
+setnames(alldirnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+alldirnoticestable[,name := str_replace_all(name, fixed(","), "")]
+alldirnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
+save(alldirnoticestable, file = "alldirnoticestable.Rdata")
+
+sharenoticeslist <- lapply(stockcodes, gettable, searchnumber = 5)
+allsharenoticestable <- rbindlist(sharenoticeslist, fill=TRUE)
+allsharenoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
+allsharenoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
+allsharenoticestable[,amount := numberofshares * pricepershare]
+allsharenoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
+setnames(allsharenoticestable, "Name of substantial shareholder / director / chief executive", "name")
+save(allsharenoticestable, file = "allsharenoticestable.Rdata")
+
 
 onemonthamountthreshold <- 10^7
 threemonthamountthreshold <- 5*10^7
 onemonthchangethreshold <- 0.1
 threemonthchangethreshold <- 0.3
 
-onemonthtable <- allallnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthtable <- allallnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+onemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+onemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+
 
 nettable <- function(table) {
     return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
 }
-onemonthtablenet <- nettable(onemonthtable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
-threemonthtablenet <- nettable(threemonthtable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
+onemonthdirtablenet <- nettable(onemonthdirtable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
+threemonthdirtablenet <- nettable(threemonthdirtable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
+onemonthsharetablenet <- nettable(onemonthsharetable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
+threemonthsharetablenet <- nettable(threemonthsharetable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
 
 # officers
 allofficers <- data.table(read_excel("Director_List.xls"))
@@ -143,11 +160,13 @@ capwords <- function(s, strict = FALSE) {
 allofficers[,name := capwords(`Director's English Name`, strict = TRUE)]
 setnames(allofficers, "Stock Code", "corpnumber")
 
-setkey(onemonthtablenet, `corpnumber`, `name`)
-setkey(threemonthtablenet, `corpnumber`, `name`)
+setkey(onemonthdirtablenet, `corpnumber`, `name`)
+setkey(threemonthdirtablenet, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
-onemonthtablenetwithofficers <- merge(onemonthtablenet, allofficers, all.x=TRUE)
-threemonthtablenetwithofficers <- merge(threemonthtablenet, allofficers, all.x=TRUE)
+onemonthdirtablenetwithofficers <- merge(onemonthtablenet, allofficers, all.x=TRUE)
+threemonthdirtablenetwithofficers <- merge(threemonthtablenet, allofficers, all.x=TRUE)
 
-write.csv(onemonthtablenetwithofficers, file = "onemonthtablenet.csv")
-write.csv(threemonthtablenetwithofficers, file = "threemonthtablenet.csv")
+write.csv(onemonthdirtablenetwithofficers, file = "onemonthdirtablenet.csv")
+write.csv(threemonthdirtablenetwithofficers, file = "threemonthdirtablenet.csv")
+write.csv(onemonthsharetablenet, file = "onemonthsharetablenet.csv")
+write.csv(threemonthsharetablenet, file = "threemonthsharetablenet.csv")
