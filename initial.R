@@ -148,8 +148,8 @@ threemonthamountthreshold <- 5*10^7
 onemonthchangethreshold <- 0.1
 threemonthchangethreshold <- 0.3
 
-onemonthtable <- allallnoticestable[Currency = "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthtable <- allallnoticestable[Currency = "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+onemonthtable <- allallnoticestable[Currency == "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthtable <- allallnoticestable[Currency == "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
 
 onemonthtable <- onemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
 threemonthtable <- threemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
