@@ -141,18 +141,18 @@ setnames(allofficers, "Stock Code", "corpnumber")
 
 setkey(allallnoticestable, `corpnumber`, `name`)
 setkey(allofficers, `corpnumber`, `name`)
-allallnoticestable <- merge(allallnoticestable, allofficers, all.x=TRUE)
+allallnoticestablewithofficers <- merge(allallnoticestable, allofficers, all.x=TRUE)
 
 onemonthamountthreshold <- 10^7
 threemonthamountthreshold <- 5*10^7
 onemonthchangethreshold <- 0.1
 threemonthchangethreshold <- 0.3
 
-onemonthtable <- allallnoticestable[currency == "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthtable <- allallnoticestable[currency == "HKD", dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+onemonthtable <- allallnoticestablewithofficers[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
+threemonthtable <- allallnoticestablewithofficers[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
 
-onemonthtablenet <- onemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
-threemonthtablenet <- threemonthtable[,list(long = sum(`Change in long position`, na.rm=TRUE), short = sum(`Change in short position`, na.rm=TRUE), pool = sum(`Change in lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
+onemonthtablenet <- onemonthtable[,list(long = sum(`Long position`, na.rm=TRUE), short = sum(`Short position`, na.rm=TRUE), pool = sum(`Lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
+threemonthtablenet <- threemonthtable[,list(long = sum(`Long position`, na.rm=TRUE), short = sum(`Short position`, na.rm=TRUE), pool = sum(`Lending pool`, na.rm=TRUE)),by=list(`Stock code`, Name, Age, `Current Position`, Since)]
 
 write.csv(onemonthtablenet, "onemonthtablenet.csv")
 write.csv(threemonthtablenet, "threemonthtablenet.csv")
