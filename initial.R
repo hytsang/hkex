@@ -112,6 +112,8 @@ allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share
 allallnoticestable[,amount := numberofshares * pricepershare]
 allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
 setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+allallnoticestable[,name := str_replace_all(name, fixed(","), "")]
+allallnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
 save(allallnoticestable, file = "allallnoticestable.Rdata")
 
 onemonthamountthreshold <- 10^7
@@ -138,7 +140,7 @@ capwords <- function(s, strict = FALSE) {
     sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
 }
 
-allofficers[,name := str_replace_all(capwords(`Director's English Name`, strict = TRUE), ",", "")]
+allofficers[,name := capwords(`Director's English Name`, strict = TRUE)]
 setnames(allofficers, "Stock Code", "corpnumber")
 
 setkey(onemonthtablenet, `corpnumber`, `name`)
