@@ -53,29 +53,32 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-firstdate <- ymd(today())
+todaydate <- ymd(today())
 threemonthsago <- ymd(firstdate - months(3))
 onemonthago <- ymd(firstdate - months(1))
 
-gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11) {
+gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11, firstdate = threemonthsago, lastdate = todaydate) {
     print(corpnumber)
+    lastdateprinted <- strftime(lastdate, "%d/%m/%Y")
     firstdateprinted <- strftime(firstdate, "%d/%m/%Y")
-    threemonthsagoprinted <- strftime(threemonthsago, "%d/%m/%Y")
-    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", threemonthsagoprinted, "&sced=", firstdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
+    firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", lastdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, paste0("a:nth-child(", searchnumber, ")")), "href")
     allnoticestable <- data.table()
-    for (url in namespageallnoticeslinks) {
-        snotice <- jump_to(s, url)
+    company <- tail(html_text(html_nodes(namespage, ".tbCell:nth-child(2)")), 1)
+    print(company)
+    for (urlnumber in 1:length(namespageallnoticeslinks)) {
+#        company <- html_text(html_nodes(namespage, ".tbCell:nth-child(2)")[[urlnumber]])
+        snotice <- jump_to(s, namespageallnoticeslinks[urlnumber])
         print(snotice); print("notices")
-        noticestablehtml <- html(paste0(baseurl, url), encoding = "UTF-8")
+        noticestablehtml <- html(paste0(baseurl, namespageallnoticeslinks[urlnumber]), encoding = "UTF-8")
         pageslinks <- html_attr(html_nodes(noticestablehtml, "#lblPageIndex a"), "href")
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
-            print(pagelink); print("page")
-            allnoticestablepage <- data.table(html_table(html_node(spage, "#grdPaging"), header = TRUE))
+            print(spage); print("page")
+            allnoticestablepage <- data.table(html_table(html_node(html(spage), "#grdPaging"), header = TRUE))
             allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
             
             if(nrow(allnoticestablepage)>0) {
@@ -86,6 +89,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
                 allnoticestablepage <- cbind(allnoticestablepage, linkinfotable)
                 
                 allnoticestablepage[,corpnumber := corpnumber]
+                allnoticestablepage[,company := company]
 
 
                 
@@ -115,7 +119,6 @@ getdirectorinfo <- function(corpnumber) {
     if (!is.null(html_node(officerpage, "table.dataTable"))) {
         officertable <- data.table(html_table(html_node(officerpage, "table.dataTable")))
         officertable[,corpnumber := corpnumber]
-        save(officertable, file = paste0("officers/", corpnumber, "officers.Rdata"))
         return(officertable)
     } else {
         return(data.table(corpnumber = corpnumber))
