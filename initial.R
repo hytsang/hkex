@@ -111,6 +111,7 @@ allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of
 allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 allallnoticestable[,amount := numberofshares * pricepershare]
 allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
+setnames(allallnoticestable, "Name of substantial shareholder / director / chief executive", "name")
 save(allallnoticestable, file = "allallnoticestable.Rdata")
 
 onemonthamountthreshold <- 10^7
