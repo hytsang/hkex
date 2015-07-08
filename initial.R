@@ -68,7 +68,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     namespage <- html(firsturl)
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, paste0("a:nth-child(", searchnumber, ")")), "href")
     allnoticestable <- data.table()
-    company <- tail(html_text(html_nodes(namespage, ".tbCell:nth-child(2)")), 1)
+    company <- str_trim(tail(html_text(html_nodes(namespage, ".tbCell:nth-child(2)")), 1))
     print(company)
     for (urlnumber in 1:length(namespageallnoticeslinks)) {
 #        company <- html_text(html_nodes(namespage, ".tbCell:nth-child(2)")[[urlnumber]])
