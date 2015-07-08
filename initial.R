@@ -158,10 +158,10 @@ nettable <- function(table) {
         }
     }
 }
-onemonthdirtablenet <- nettable(onemonthdirtable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
-threemonthdirtablenet <- nettable(threemonthdirtable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
-onemonthsharetablenet <- nettable(onemonthsharetable)[(long >= onemonthchangethreshold) | (short >= onemonthchangethreshold) | (pool >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
-threemonthsharetablenet <- nettable(threemonthsharetable)[(long >= threemonthchangethreshold) | (short >= threemonthchangethreshold) | (pool >= threemonthchangethreshold) | (sumamount >= threemonthamountthreshold)]
+onemonthdirtablenet <- nettable(onemonthdirtable)[(abs(long) >= onemonthchangethreshold) | (abs(short) >= onemonthchangethreshold) | (abs(pool) >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
+threemonthdirtablenet <- nettable(threemonthdirtable)[(abs(long) >= threemonthchangethreshold) | (abs(short) >= threemonthchangethreshold) | (abs(pool) >= threemonthchangethreshold) | (abs(sumamount) >= threemonthamountthreshold)]
+onemonthsharetablenet <- nettable(onemonthsharetable)[(abs(long) >= onemonthchangethreshold) | (abs(short) >= onemonthchangethreshold) | (abs(pool) >= onemonthchangethreshold) | (abs(sumamount) >= onemonthamountthreshold)]
+threemonthsharetablenet <- nettable(threemonthsharetable)[(abs(long) >= threemonthchangethreshold) | (abs(short) >= threemonthchangethreshold) | (abs(pool) >= threemonthchangethreshold) | (abs(sumamount) >= threemonthamountthreshold)]
 
 # officers
 allofficers <- data.table(read_excel("Director_List.xls"))
