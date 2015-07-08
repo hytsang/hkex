@@ -80,7 +80,11 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
             spage <- jump_to(snotice, pagelink)
             print(spage); print("page")
             allnoticestablepage <- data.table(html_table(html_node(html(spage), "#grdPaging"), header = TRUE))
-            allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
+            if (searchnumber == 5) {
+                allnoticestablepage <- allnoticestablepage[`Date of relevant event (dd/mm/yyyy)` != " "]
+            } else {
+                allnoticestablepage <- allnoticestablepage[`Date of relevant event` != " "]
+            }
             
             if(nrow(allnoticestablepage)>0) {
                 allnoticestablepagelinks <- html_attr(html_nodes(spage, ".tbCell:nth-child(7) a"), "href")
@@ -113,18 +117,18 @@ alldirnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of
 alldirnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 alldirnoticestable[,amount := numberofshares * pricepershare]
 alldirnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-setnames(alldirnoticestable, "Name of substantial shareholder / director / chief executive", "name")
+setnames(alldirnoticestable, "Name of director", "name")
 alldirnoticestable[,name := str_replace_all(name, fixed(","), "")]
 alldirnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
 save(alldirnoticestable, file = "alldirnoticestable.Rdata")
 
 sharenoticeslist <- lapply(stockcodes, gettable, searchnumber = 5)
 allsharenoticestable <- rbindlist(sharenoticeslist, fill=TRUE)
-allsharenoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
+allsharenoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought/ sold/ involved`, 1, -4), ",", "")) ]
 allsharenoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 allsharenoticestable[,amount := numberofshares * pricepershare]
 allsharenoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-setnames(allsharenoticestable, "Name of substantial shareholder / director / chief executive", "name")
+setnames(allsharenoticestable, "Name of substantial shareholder", "name")
 save(allsharenoticestable, file = "allsharenoticestable.Rdata")
 
 
@@ -135,8 +139,8 @@ threemonthchangethreshold <- 0.3
 
 onemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
 threemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
-onemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
+onemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event`) >= onemonthago]
+threemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event`) >= threemonthsago]
 
 
 nettable <- function(table) {
