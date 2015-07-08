@@ -108,7 +108,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     return(allnoticestable)
 }
 
-stockcodes <- allstockstable[,`STOCK CODE`][1:10]
+stockcodes <- allstockstable[,`STOCK CODE`]
 
 
 dirnoticeslist <- lapply(stockcodes, gettable, searchnumber = 9)
