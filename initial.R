@@ -66,6 +66,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     s <- html_session(firsturl)
     print(s); print("start")
     namespage <- html(firsturl)
+    if (html_text(html_node(namespage, "#lblRecCount")) == 0) {return()}
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, paste0("a:nth-child(", searchnumber, ")")), "href")
     allnoticestable <- data.table()
     company <- str_trim(tail(html_text(html_nodes(namespage, ".tbCell:nth-child(2)")), 1))
