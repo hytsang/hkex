@@ -163,8 +163,10 @@ threemonthdirtablenet <- nettable(threemonthdirtable)[(abs(long) >= threemonthch
 onemonthsharetablenet <- nettable(onemonthsharetable)[(abs(long) >= onemonthchangethreshold) | (abs(short) >= onemonthchangethreshold) | (abs(pool) >= onemonthchangethreshold) | (abs(sumamount) >= onemonthamountthreshold)]
 threemonthsharetablenet <- nettable(threemonthsharetable)[(abs(long) >= threemonthchangethreshold) | (abs(short) >= threemonthchangethreshold) | (abs(pool) >= threemonthchangethreshold) | (abs(sumamount) >= threemonthamountthreshold)]
 
-# officers
+                                        # officers
+download.file("http://www.hkexnews.hk/reports/dirsearch/dirlist/Documents/Director_List.xls", "Director_List.xls")
 allofficers <- data.table(read_excel("Director_List.xls"))
+allofficers <- allofficers[is.na(`Resignation Date (yyyy-mm-dd)`)]
 
 capwords <- function(s, strict = FALSE) {
     cap <- function(s) paste(toupper(substring(s, 1, 1)),
