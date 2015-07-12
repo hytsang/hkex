@@ -108,8 +108,18 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     return(allnoticestable)
 }
 
-stockcodes <- allstockstable[,`STOCK CODE`]
+stockcodes <- allstockstable[,`STOCK CODE`][100:104]
 
+allnoticeslist <- lapply(stockcodes, gettable, searchnumber = 11)
+allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
+allallnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of shares bought / sold / involved`, 1, -4), ",", "")) ]
+allallnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
+allallnoticestable[,amount := numberofshares * pricepershare]
+allallnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
+#setnames(allallnoticestable, "Name of allector", "name")
+#allallnoticestable[,name := str_replace_all(name, fixed(","), "")]
+#allallnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
+save(allallnoticestable, file = "allallnoticestable.Rdata")
 
 dirnoticeslist <- lapply(stockcodes, gettable, searchnumber = 9)
 alldirnoticestable <- rbindlist(dirnoticeslist, fill=TRUE)
@@ -117,9 +127,6 @@ alldirnoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. of
 alldirnoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 alldirnoticestable[,amount := numberofshares * pricepershare]
 alldirnoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-setnames(alldirnoticestable, "Name of director", "name")
-alldirnoticestable[,name := str_replace_all(name, fixed(","), "")]
-alldirnoticestable[,name := str_replace_all(name, fixed("-"), " ")]
 save(alldirnoticestable, file = "alldirnoticestable.Rdata")
 
 sharenoticeslist <- lapply(stockcodes, gettable, searchnumber = 5)
@@ -128,63 +135,28 @@ allsharenoticestable[,numberofshares := as.numeric(str_replace_all(str_sub(`No. 
 allsharenoticestable[,pricepershare := as.numeric(str_sub(`Average price per share`, 4)) ]
 allsharenoticestable[,amount := numberofshares * pricepershare]
 allsharenoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
-setnames(allsharenoticestable, "Name of substantial shareholder", "name")
+#setnames(allsharenoticestable, "Name of substantial shareholder", "name")
 save(allsharenoticestable, file = "allsharenoticestable.Rdata")
 
-
-onemonthamountthreshold <- 10^7
-threemonthamountthreshold <- 5*10^7
-onemonthchangethreshold <- 0.1
-threemonthchangethreshold <- 0.3
-
-onemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= onemonthago]
-threemonthdirtable <- alldirnoticestable[currency == "HKD" & dmy(`Date of relevant event (dd/mm/yyyy)`) >= threemonthsago]
-onemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event`) >= onemonthago]
-threemonthsharetable <- allsharenoticestable[currency == "HKD" & dmy(`Date of relevant event`) >= threemonthsago]
-
-
-nettable <- function(table) {
-    if ("Short Position" %in% colnames(table)) {
-        if ("Lending Pool" %in% colnames(table)) {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        } else {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        }
-    } else {
-        if ("Lending Pool" %in% colnames(table)) {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        } else {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        }
-    }
-}
-onemonthdirtablenet <- nettable(onemonthdirtable)[(abs(long) >= onemonthchangethreshold) | (abs(short) >= onemonthchangethreshold) | (abs(pool) >= onemonthchangethreshold) | (sumamount >= onemonthamountthreshold)]
-threemonthdirtablenet <- nettable(threemonthdirtable)[(abs(long) >= threemonthchangethreshold) | (abs(short) >= threemonthchangethreshold) | (abs(pool) >= threemonthchangethreshold) | (abs(sumamount) >= threemonthamountthreshold)]
-onemonthsharetablenet <- nettable(onemonthsharetable)[(abs(long) >= onemonthchangethreshold) | (abs(short) >= onemonthchangethreshold) | (abs(pool) >= onemonthchangethreshold) | (abs(sumamount) >= onemonthamountthreshold)]
-threemonthsharetablenet <- nettable(threemonthsharetable)[(abs(long) >= threemonthchangethreshold) | (abs(short) >= threemonthchangethreshold) | (abs(pool) >= threemonthchangethreshold) | (abs(sumamount) >= threemonthamountthreshold)]
-
                                         # officers
-download.file("http://www.hkexnews.hk/reports/dirsearch/dirlist/Documents/Director_List.xls", "Director_List.xls")
+if(!file.exists("Director_List.xls")) {download.file("http://www.hkexnews.hk/reports/dirsearch/dirlist/Documents/Director_List.xls", "Director_List.xls")}
 allofficers <- data.table(read_excel("Director_List.xls"))
-allofficers <- allofficers[is.na(`Resignation Date (yyyy-mm-dd)`)]
+allofficers <- allofficers[is.na(`Resignation Date (yyyy-mm-dd)`)] # only officers who haven't resigned
 
-capwords <- function(s, strict = FALSE) {
-    cap <- function(s) paste(toupper(substring(s, 1, 1)),
-                  {s <- substring(s, 2); if(strict) tolower(s) else s},
-                             sep = "", collapse = " " )
-    sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
-}
+alldirnoticestable[,canonicalname := str_replace_all(`Name of director`, fixed(","), "")]
+alldirnoticestable[,canonicalname := str_replace_all(canonicalname, fixed("-"), " ")]
+alldirnoticestable[,canonicalname := str_replace_all(canonicalname, fixed(" "), "")]
+alldirnoticestable[,canonicalname := tolower(canonicalname)]
 
-allofficers[,name := capwords(`Director's English Name`, strict = TRUE)]
+allofficers[,canonicalname := tolower(`Director's English Name`)]
+allofficers[,canonicalname := str_replace_all(canonicalname, fixed(" "), "")]
 setnames(allofficers, "Stock Code", "corpnumber")
 
-setkey(onemonthdirtablenet, `corpnumber`, `name`)
-setkey(threemonthdirtablenet, `corpnumber`, `name`)
-setkey(allofficers, `corpnumber`, `name`)
-onemonthdirtablenetwithofficers <- merge(onemonthdirtablenet, allofficers, all.x=TRUE)
-threemonthdirtablenetwithofficers <- merge(threemonthdirtablenet, allofficers, all.x=TRUE)
+setkey(alldirnoticestable, `corpnumber`, `canonicalname`)
+setkey(allofficers, `corpnumber`, `canonicalname`)
+alldirnoticestablewithofficers <- merge(alldirnoticestable, allofficers, all.x=TRUE)
+alldirnoticestablewithofficers[, c("canonicalname", "Director's English Name") := NULL]
 
-write.csv(onemonthdirtablenetwithofficers, file = "onemonthdirtablenet.csv", row.names = FALSE)
-write.csv(threemonthdirtablenetwithofficers, file = "threemonthdirtablenet.csv", row.names = FALSE)
-write.csv(onemonthsharetablenet, file = "onemonthsharetablenet.csv", row.names = FALSE)
-write.csv(threemonthsharetablenet, file = "threemonthsharetablenet.csv", row.names = FALSE)
+write.csv(alldirnoticestablewithofficers, file = "alldirnoticestable.csv", row.names = FALSE)
+write.csv(allsharenoticestable, file = "allsharenoticestable.csv", row.names = FALSE)
+write.csv(allallnoticestable, file = "allallnoticestable.csv", row.names = FALSE)
