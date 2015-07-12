@@ -4,17 +4,38 @@ library(stringr)
 library(httr)
 library(lubridate)
 library(readxl)
+library(digest)
 
-codespage <- html("http://sdinotice.hkex.com.hk/di/NSStdCode.htm")
+todaydate <- ymd(today())
+threemonthsago <- ymd(todaydate - months(3))
+onemonthago <- ymd(todaydate - months(1))
+
+todayprinted <- strftime(todaydate, "%Y-%m-%d")
+dir.create(todayprinted)
+
+cache <- function(url) {
+    urlpagename <- paste0(digest(url), collapse="")
+    filepath <- paste0(todayprinted, "/", urlpagename, ".Rdata")
+    if (!file.exists(filepath)) {
+        urlpage <- read_html(url, encoding = "UTF-8")
+        cat(as(urlpage, "character"), file = filepath)
+        return(urlpage)
+    } else {
+        urlpage <- read_html(filepath, encoding = "UTF-8")
+        return(urlpage)
+    }
+}
+
+codespage <- cache("http://sdinotice.hkex.com.hk/di/NSStdCode.htm")
 codestable <- data.table(codes = html_text(html_nodes(codespage, ".txt:nth-child(1)")), descriptions = str_trim(str_replace_all(html_text(html_nodes(codespage, ".txt:nth-child(2)")), "[\r\n\t]", "")))
 
-stockspage <- html("https://www.hkex.com.hk/eng/market/sec_tradinfo/stockcode/eisdeqty.htm")
+stockspage <- cache("https://www.hkex.com.hk/eng/market/sec_tradinfo/stockcode/eisdeqty.htm")
 stockspagetable <- html_table(html_node(stockspage, ".table_grey_border"))
 stockspagetable <- data.table(stockspagetable)
 stockspagetable <- stockspagetable[,1:2,with=FALSE]
 setnames(stockspagetable, unlist(stockspagetable[1]))
 stockspagetable <- stockspagetable[-1]
-gemstockspage <- html("https://www.hkex.com.hk/eng/market/sec_tradinfo/stockcode/eisdgems.htm")
+gemstockspage <- cache("https://www.hkex.com.hk/eng/market/sec_tradinfo/stockcode/eisdgems.htm")
 gemstockspagetable <- html_table(html_node(gemstockspage, ".table_grey_border"))
 gemstockspagetable <- data.table(gemstockspagetable)
 gemstockspagetable <- gemstockspagetable[,1:2,with=FALSE]
@@ -25,7 +46,7 @@ allstockstable <- rbind(stockspagetable, gemstockspagetable)
 getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com.hk/di/") {
     print(linkurl)
     slink <- jump_to(s, linkurl)
-    linkpage <- html(slink)
+    linkpage <- cache(slink)
 
     if (!is.null(html_node(linkpage, "#lblDIssued"))) {
         tso <- html_text(html_node(linkpage, "#lblDIssued"))
@@ -54,10 +75,6 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-todaydate <- ymd(today())
-threemonthsago <- ymd(todaydate - months(3))
-onemonthago <- ymd(todaydate - months(1))
-
 gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11, firstdate = threemonthsago, lastdate = todaydate) {
     print(corpnumber)
     lastdateprinted <- strftime(lastdate, "%d/%m/%Y")
@@ -65,7 +82,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     firsturl <- paste0("http://sdinotice.hkex.com.hk/di/NSSrchCorpList.aspx?sa1=cl&scsd=", firstdateprinted, "&sced=", lastdateprinted, "&sc=", corpnumber, "&src=MAIN&lang=EN")
     s <- html_session(firsturl)
     print(s); print("start")
-    namespage <- html(firsturl)
+    namespage <- cache(firsturl)
     if (html_text(html_node(namespage, "#lblRecCount")) == 0) {return()}
     namespageallnoticeslinks <- html_attr(html_nodes(namespage, paste0("a:nth-child(", searchnumber, ")")), "href")
     allnoticestable <- data.table()
@@ -75,12 +92,13 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
 #        company <- html_text(html_nodes(namespage, ".tbCell:nth-child(2)")[[urlnumber]])
         snotice <- jump_to(s, namespageallnoticeslinks[urlnumber])
         print(snotice); print("notices")
-        noticestablehtml <- html(paste0(baseurl, namespageallnoticeslinks[urlnumber]), encoding = "UTF-8")
+        noticestablehtml <- cache(paste0(baseurl, namespageallnoticeslinks[urlnumber]))
         pageslinks <- html_attr(html_nodes(noticestablehtml, "#lblPageIndex a"), "href")
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
             print(spage); print("page")
-            allnoticestablepage <- data.table(html_table(html_node(html(spage), "#grdPaging"), header = TRUE))
+            spagehtml <- cache(spage)
+            allnoticestablepage <- data.table(html_table(html_node(spagehtml, "#grdPaging"), header = TRUE))
             if (searchnumber == 5) {
                 allnoticestablepage <- allnoticestablepage[`Date of relevant event` != " "]
             } else {
@@ -108,7 +126,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
     return(allnoticestable)
 }
 
-stockcodes <- allstockstable[,`STOCK CODE`][100:104]
+stockcodes <- allstockstable[,`STOCK CODE`]
 
 allnoticeslist <- lapply(stockcodes, gettable, searchnumber = 11)
 allallnoticestable <- rbindlist(allnoticeslist, fill=TRUE)
