@@ -13,11 +13,11 @@ onemonthago <- ymd(todaydate - months(1))
 todayprinted <- strftime(todaydate, "%Y-%m-%d")
 dir.create(todayprinted)
 
-cache <- function(url) {
+cache <- function(url, encoding = "UTF-8") {
     urlpagename <- paste0(digest(url), collapse="")
     filepath <- paste0(todayprinted, "/", urlpagename, ".Rdata")
     if (!file.exists(filepath)) {
-        urlpage <- read_html(url, encoding = "UTF-8")
+        urlpage <- read_html(url, encoding = encoding)
         cat(as(urlpage, "character"), file = filepath)
         return(urlpage)
     } else {
@@ -92,7 +92,7 @@ gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", s
 #        company <- html_text(html_nodes(namespage, ".tbCell:nth-child(2)")[[urlnumber]])
         snotice <- jump_to(s, namespageallnoticeslinks[urlnumber])
         print(snotice); print("notices")
-        noticestablehtml <- cache(paste0(baseurl, namespageallnoticeslinks[urlnumber]))
+        noticestablehtml <- cache(paste0(baseurl, namespageallnoticeslinks[urlnumber]), encoding = "big5")
         pageslinks <- html_attr(html_nodes(noticestablehtml, "#lblPageIndex a"), "href")
         for (pagelink in pageslinks) {
             spage <- jump_to(snotice, pagelink)
