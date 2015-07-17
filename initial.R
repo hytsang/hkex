@@ -156,25 +156,6 @@ allsharenoticestable[,currency := str_sub(`Average price per share`, 1, 3) ]
 #setnames(allsharenoticestable, "Name of substantial shareholder", "name")
 save(allsharenoticestable, file = "allsharenoticestable.Rdata")
 
-                                        # officers
-if(!file.exists("Director_List.xls")) {download.file("http://www.hkexnews.hk/reports/dirsearch/dirlist/Documents/Director_List.xls", "Director_List.xls")}
-allofficers <- data.table(read_excel("Director_List.xls"))
-allofficers <- allofficers[is.na(`Resignation Date (yyyy-mm-dd)`)] # only officers who haven't resigned
-
-alldirnoticestable[,canonicalname := str_replace_all(`Name of director`, fixed(","), "")]
-alldirnoticestable[,canonicalname := str_replace_all(canonicalname, fixed("-"), " ")]
-alldirnoticestable[,canonicalname := str_replace_all(canonicalname, fixed(" "), "")]
-alldirnoticestable[,canonicalname := tolower(canonicalname)]
-
-allofficers[,canonicalname := tolower(`Director's English Name`)]
-allofficers[,canonicalname := str_replace_all(canonicalname, fixed(" "), "")]
-setnames(allofficers, "Stock Code", "corpnumber")
-
-setkey(alldirnoticestable, `corpnumber`, `canonicalname`)
-setkey(allofficers, `corpnumber`, `canonicalname`)
-alldirnoticestablewithofficers <- merge(alldirnoticestable, allofficers, all.x=TRUE)
-alldirnoticestablewithofficers[, c("canonicalname", "Director's English Name") := NULL]
-
-write.csv(alldirnoticestablewithofficers, file = "alldirnoticestable.csv", row.names = FALSE)
+write.csv(alldirnoticestable, file = "alldirnoticestable.csv", row.names = FALSE)
 write.csv(allsharenoticestable, file = "allsharenoticestable.csv", row.names = FALSE)
 write.csv(allallnoticestable, file = "allallnoticestable.csv", row.names = FALSE)
