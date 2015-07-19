@@ -45,7 +45,7 @@ nettable <- function(noticestable) {
     if (!("Lending Pool" %in% colnames(table))) {
         table[,`Lending Pool` := 0]
     }
-    return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])    
+    return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = prettyNum(sum(amount),big.mark=",",scientific=FALSE)),by=list(corpnumber, name, company)])    
 }
 
 noticestablelist <- list(alldirnoticestable, allsharenoticestable, allallnoticestable)
