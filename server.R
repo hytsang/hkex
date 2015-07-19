@@ -23,8 +23,8 @@ setnames(allofficers, "Stock Code", "corpnumber")
 addofficers <- function(dirtable) {
 
     table <- copy(dirtable)
-                                        # officers
-    table[,canonicalname := str_replace_all(name, fixed(","), "")]
+    table[,corpnumber := `Stock code`]    
+    table[,canonicalname := str_replace_all(Name, fixed(","), "")]
     table[,canonicalname := str_replace_all(canonicalname, fixed("-"), " ")]
     table[,canonicalname := str_replace_all(canonicalname, fixed(" "), "")]
     table[,canonicalname := tolower(canonicalname)]
@@ -32,26 +32,20 @@ addofficers <- function(dirtable) {
     setkey(table, `corpnumber`, `canonicalname`)
     setkey(allofficers, `corpnumber`, `canonicalname`)
     tablewithofficers <- merge(table, allofficers, all.x=TRUE)
-    tablewithofficers[, c("canonicalname", "Director's English Name") := NULL]
+    tablewithofficers[, c("canonicalname", "corpnumber", "Listed Company's English Name", "Listed Company's Chinese Name", "Director's English Name", "Director's Chinese Name", "Listing Status") := NULL]
 
     return(tablewithofficers)
 }
 
 nettable <- function(noticestable) {
     table <- copy(noticestable)
-    if ("Short Position" %in% colnames(table)) {
-        if ("Lending Pool" %in% colnames(table)) {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        } else {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        }
-    } else {
-        if ("Lending Pool" %in% colnames(table)) {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        } else {
-            return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = 0, pool = 0, sumamount = sum(amount)),by=list(corpnumber, name, company)])
-        }
+    if (!("Short Position" %in% colnames(table))) {
+        table[,`Short Position` := 0]
     }
+    if (!("Lending Pool" %in% colnames(table))) {
+        table[,`Lending Pool` := 0]
+    }
+    return(table[,list(long = sum(`Long Position`, na.rm=TRUE), short = sum(`Short Position`, na.rm=TRUE), pool = sum(`Lending Pool`, na.rm=TRUE), sumamount = sum(amount)),by=list(corpnumber, name, company)])    
 }
 
 noticestablelist <- list(alldirnoticestable, allsharenoticestable, allallnoticestable)
@@ -61,10 +55,12 @@ shinyServer(function(input, output) {
         noticestablelist[[as.numeric(input$whichtable)]][currency == "HKD" & dmy(date) >= ymd(as.character(input$daterange[1])) & dmy(date) <= ymd(as.character(input$daterange[2]))]
     })
     output$tablenet <- renderDataTable({
+        noticestablenet <- nettable(noticestable())[(abs(long) >= input$changethreshold) | (abs(short) >= input$changethreshold) | (abs(pool) >= input$changethreshold) | (sumamount >= input$amountthreshold)]
+        setnames(noticestablenet, c("Stock code", "Name", "Company", "Change in long position", "Change in short position", "Change in lending pool", "Total amount of money (HK$)"))
         if (input$whichtable == 1) {
-            addofficers(nettable(noticestable())[(abs(long) >= input$changethreshold) | (abs(short) >= input$changethreshold) | (abs(pool) >= input$changethreshold) | (sumamount >= input$amountthreshold)])
+            addofficers(noticestablenet)
         } else {
-            nettable(noticestable())[(abs(long) >= input$changethreshold) | (abs(short) >= input$changethreshold) | (abs(pool) >= input$changethreshold) | (sumamount >= input$amountthreshold)]
+            noticestablenet
         }
     })
 })
