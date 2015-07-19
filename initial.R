@@ -7,6 +7,7 @@ library(readxl)
 library(digest)
 
 todaydate <- ymd(today())
+oneyearago <- ymd(todaydate - years(1))
 threemonthsago <- ymd(todaydate - months(3))
 onemonthago <- ymd(todaydate - months(1))
 
@@ -75,7 +76,7 @@ getlinkinfo <- function(linkurl, s = spage, baseurl = "http://sdinotice.hkex.com
     }
 }
 
-gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11, firstdate = threemonthsago, lastdate = todaydate) {
+gettable <- function(corpnumber, baseurl = "http://sdinotice.hkex.com.hk/di/", searchnumber = 11, firstdate = oneyearago, lastdate = todaydate) {
     print(corpnumber)
     lastdateprinted <- strftime(lastdate, "%d/%m/%Y")
     firstdateprinted <- strftime(firstdate, "%d/%m/%Y")
