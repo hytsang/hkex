@@ -24,7 +24,7 @@ shinyUI(
                             value = 10^6),
                 dateRangeInput("daterange",
                                label = 'Date range:',
-                               start = Sys.Date() - 30, end = Sys.Date(), max = Sys.Date()
+                               start = Sys.Date() - 30, end = Sys.Date(), max = Sys.Date(), min = Sys.Date() - 365
                                )
             ),
             
