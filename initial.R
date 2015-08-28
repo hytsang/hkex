@@ -160,3 +160,6 @@ save(allsharenoticestable, file = "allsharenoticestable.Rdata")
 write.csv(alldirnoticestable, file = "alldirnoticestable.csv", row.names = FALSE)
 write.csv(allsharenoticestable, file = "allsharenoticestable.csv", row.names = FALSE)
 write.csv(allallnoticestable, file = "allallnoticestable.csv", row.names = FALSE)
+
+system(paste0("rm -rf ", todayprinted))
+
