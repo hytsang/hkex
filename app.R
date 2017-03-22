@@ -37,7 +37,7 @@ ui <- fluidPage(
                   min = -100,
                   max = 100,
                   step = 1,
-                  value = 10
+                  value = 0
       ),
       dateRangeInput("daterange",
                      label = 'Date range:',
