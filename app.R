@@ -12,8 +12,9 @@ library(lubridate)
 library(jsonlite)
 library(tidyr)
 library(shiny)
+library(data.table)
 
-hkexsmall <- read.csv("hkexsmall.csv", na.strings = c("", "NA"))
+hkexsmall <- fread("hkexsmall.csv", na.strings = c("", "NA"))
 
 # Define UI
 ui <- fluidPage(
