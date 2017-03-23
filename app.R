@@ -57,10 +57,11 @@ ui <- fluidPage(
 server <- function(input, output) {
    
   output$tablenet <- renderDataTable({
-    noticestablenet <- hkexsmall %>% filter(position == input$position) %>% filter(formtype == input$formtype) %>% filter(dmy(date) >= ymd(as.character(input$daterange[1])) & dmy(date) <= ymd(as.character(input$daterange[2]))) %>% arrange(corporation, stock_code, canonicalname, desc(when), date) %>% group_by(corporation, stock_code, canonicalname) %>% summarise(sharesdiff = sum(diff(value))) %>% filter(abs(sharesdiff) >= input$changethreshold & abs(sharesdiff - input$changethreshold) <= abs(sharesdiff))
+      noticestablenet <- hkexsmall %>% filter(position == input$position) %>% filter(formtype == input$formtype) %>% filter(dmy(date) >= ymd(as.character(input$daterange[1])) & dmy(date) <= ymd(as.character(input$daterange[2]))) %>% arrange(corporation, stock_code, canonicalname, desc(when), date) %>% group_by(corporation, stock_code, canonicalname) %>% summarise(sharesdiff = sum(diff(value))) %>% filter(abs(sharesdiff) >= input$changethreshold & abs(sharesdiff - input$changethreshold) <= abs(sharesdiff)) %>% ungroup
+      noticestablenet <- noticestablenet %>% mutate(stock_code = paste0('<a href="http://www.aastocks.com/en/ltp/rtquote.aspx?symbol=', stock_code, '" target="_blank">', stock_code, '</a>'))
     # setnames(noticestablenet, c("Stock code", "Name", "Company", "Change in long position", "Change in short position", "Change in lending pool", "Total amount of money (HK$)"))
-    noticestablenet
-  })
+      noticestablenet
+  }, escape = FALSE)
 }
 
 # Run the application 
