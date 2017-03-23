@@ -2,4 +2,6 @@
 .Rhistory
 .RData
 *~
-*.RProj
+*.Rproj
+*.csv
+*.jl
