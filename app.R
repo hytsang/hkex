@@ -14,6 +14,8 @@ library(tidyr)
 library(shiny)
 library(data.table)
 
+options("scipen"=100, "digits"=3)
+
 hkexsmall <- fread("hkexsmall.csv", na.strings = c("", "NA"))
 
 # Define UI
