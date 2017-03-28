@@ -16,4 +16,4 @@ for (jsonfileindex in 1:length(list.files(pattern = "*.jl"))) {
 
 hkexsmall <- rbindlist(hkexdata)
 
-write.csv(hkexsmall, file = "hkexsmall.csv", row.names = FALSE)
+write.csv(hkexsmall, file = "hkexsmalldelta.csv", row.names = FALSE)
