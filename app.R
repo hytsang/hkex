@@ -13,6 +13,7 @@ library(jsonlite)
 library(tidyr)
 library(shiny)
 library(data.table)
+library(DT)
 
 options("scipen"=100, "digits"=3)
 
@@ -63,8 +64,8 @@ server <- function(input, output) {
       noticestablenet <- hkexsmall %>% filter(position == input$position) %>% filter(formtype == input$formtype) %>% filter(dmy(date) >= ymd(as.character(input$daterange[1])) & dmy(date) <= ymd(as.character(input$daterange[2]))) %>% arrange(corporation, stock_code, canonicalname, desc(when), date) %>% group_by(corporation, stock_code, canonicalname) %>% summarise(sharesdiff = sum(diff(value))) %>% filter(abs(sharesdiff) >= input$changethreshold) %>% ungroup
       noticestablenet <- noticestablenet %>% mutate(stock_code = paste0('<a href="http://www.aastocks.com/en/ltp/rtquote.aspx?symbol=', stock_code, '" target="_blank">', stock_code, '</a>'))
       colnames(noticestablenet) <- c("Listed company", "Stock code", "Shareholder/director name", "Change in position (%)")
-      noticestablenet
-  }, escape = FALSE)
+      formatRound(datatable(noticestablenet, escape = FALSE), columns = "Change in position (%)", digits = 3)
+  })
 }
 
 # Run the application 
