@@ -21,7 +21,7 @@ hkexsmall <- fread("hkexsmall.csv", na.strings = c("", "NA"))
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("Insider Trading"),
+  titlePanel("HKEX Insider Trading"),
   sidebarLayout(
     sidebarPanel(
       radioButtons("position",
