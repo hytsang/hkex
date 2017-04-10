@@ -61,8 +61,9 @@ server <- function(input, output) {
    
   output$tablenet <- renderDataTable({
       noticestablenet <- hkexsmall %>% filter(position == input$position) %>% filter(formtype == input$formtype) %>% filter(date >= input$daterange[1] & date <= input$daterange[2]) %>% arrange(corporation, stock_code, canonicalname, desc(beforeafter), date) %>% group_by(corporation, stock_code, canonicalname) %>% filter(row_number() == 1 | row_number() == n()) %>% mutate(sharesdiff = value - first(value)) %>% filter(beforeafter == "sharesafter") %>% filter(abs(sharesdiff) >= input$changethreshold) %>% ungroup %>% select(corporation, stock_code, canonicalname, sharesdiff) %>% collect
-      noticestablenet <- noticestablenet %>% mutate(stock_code = paste0('<a href="http://www.aastocks.com/en/ltp/rtquote.aspx?symbol=', stock_code, '" target="_blank">', stock_code, '</a>'))
-      noticestablenet %>% datatable(escape = FALSE, rownames = FALSE, colnames = c("Listed company", "Stock code", "Shareholder/director name", "Change in position (%)")) %>% formatRound(columns = "sharesdiff", digits = 2)
+      if (nrow(noticestablenet) > 0) { 
+        noticestablenet %>% mutate(stock_code = paste0('<a href="http://www.aastocks.com/en/ltp/rtquote.aspx?symbol=', stock_code, '" target="_blank">', stock_code, '</a>')) %>% datatable(escape = FALSE, rownames = FALSE, colnames = c("Listed company", "Stock code", "Shareholder/director name", "Change in position (%)")) %>% formatRound(columns = "sharesdiff", digits = 2)
+      }
   })
 }
 
